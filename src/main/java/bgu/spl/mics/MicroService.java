@@ -19,15 +19,19 @@ package bgu.spl.mics;
  * <p>
  */
 public abstract class MicroService implements Runnable { 
-    
+    private String name;
+    private MessageBusImpl messageBus;
+
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
      *             does not have to be unique)
      */
     public MicroService(String name) {
-    	
+    	this.name = name;
+    	messageBus = new MessageBusImpl();
     }
+
 
     /**
      * Subscribes to events of type {@code type} with the callback
@@ -51,7 +55,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-    	
+        //messageCallbacks.putIfAbsent(type,callback); TODO lema ze?
+        messageBus.subscribeEvent(type, this);
     }
 
     /**
@@ -75,7 +80,7 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-    	
+    	messageBus.subscribeBroadcast(type, this);
     }
 
     /**
@@ -92,7 +97,7 @@ public abstract class MicroService implements Runnable {
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
     	
-        return null; 
+        return messageBus.sendEvent(e);
     }
 
     /**
@@ -102,7 +107,7 @@ public abstract class MicroService implements Runnable {
      * @param b The broadcast message to send
      */
     protected final void sendBroadcast(Broadcast b) {
-    	
+    	messageBus.sendBroadcast(b);
     }
 
     /**
@@ -137,7 +142,7 @@ public abstract class MicroService implements Runnable {
      *         construction time and is used mainly for debugging purposes.
      */
     public final String getName() {
-        return null;
+        return name;
     }
 
     /**
