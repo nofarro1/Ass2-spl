@@ -17,10 +17,12 @@ public class Future<T> {
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
-	public Future() {
-		
+	public Future(T result) {
+		this.result=result;
 	}
-	
+
+	public Future(){}
+
 	/**
      * retrieves the result the Future object holds if it has been resolved.
      * This is a blocking method! It waits for the computation in case it has
@@ -38,14 +40,17 @@ public class Future<T> {
      * Resolves the result of this Future object.
      */
 	public void resolve (T result) {
-		
+		if(result!=null){
+			this.result=result;
+			isDone=true;
+		}
 	}
 	
 	/**
      * @return true if this object has been resolved, false otherwise
      */
 	public boolean isDone() {
-		return null;
+		return isDone;
 	}
 	
 	/**

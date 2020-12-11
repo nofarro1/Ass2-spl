@@ -1,5 +1,5 @@
-package bgu.spl.mics.application.passiveObjects;
-
+import bgu.spl.mics.application.passiveObjects.Ewok;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,29 +17,27 @@ class EwokTest {
 
     @Test
     public void testAcquireFalse(){
-        ewok.available=false;
+        ewok.release();
         ewok.acquire();
-        assertTrue(ewok.available);
+        Assertions.assertTrue(ewok.isAvailable());
     }
 
     @Test
     public void testAcquireTrue(){
-        ewok.available=true;
         ewok.acquire();
-        assertTrue(ewok.available);
+        Assertions.assertTrue(ewok.isAvailable());
     }
 
     @Test
     public void testReleaseTrue(){
-        ewok.available=true;
+        ewok.acquire();
         ewok.release();
-        assertFalse(ewok.available);
+        Assertions.assertFalse(ewok.isAvailable());
     }
 
     @Test
     public void testReleaseFalse(){
-        ewok.available=false;
         ewok.release();
-        assertFalse(ewok.available);
+        Assertions.assertFalse(ewok.isAvailable());
     }
 }
