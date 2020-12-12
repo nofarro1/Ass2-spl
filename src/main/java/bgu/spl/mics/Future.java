@@ -17,10 +17,12 @@ public class Future<T> {
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
-	public Future() {
-		
+	public Future(T result) {
+		this.result=result;
 	}
-	
+
+	public Future(){ isDone=false;}
+
 	/**
      * retrieves the result the Future object holds if it has been resolved.
      * This is a blocking method! It waits for the computation in case it has
@@ -29,23 +31,37 @@ public class Future<T> {
      * @return return the result of type T if it is available, if not wait until it is available.
      * 	       
      */
-	public T get() {
-		
-        return null; 
+	public T get() throws InterruptedException {
+		/*if(isDone) {
+			return result;
+		}
+        else {
+			wait();
+			return get();
+		}
+		 */
+		while(!isDone){
+			wait();
+		}
+		return result;
 	}
 	
 	/**
      * Resolves the result of this Future object.
      */
 	public void resolve (T result) {
-		
+		if(result!=null){
+			this.result=result;
+			isDone=true;
+			notifyAll();
+		}
 	}
 	
 	/**
      * @return true if this object has been resolved, false otherwise
      */
 	public boolean isDone() {
-		return null;
+		return isDone;
 	}
 	
 	/**
@@ -59,9 +75,14 @@ public class Future<T> {
      * 	       wait for {@code timeout} TimeUnits {@code unit}. If time has
      *         elapsed, return null.
      */
-	public T get(long timeout, TimeUnit unit) {
-		
-        return null;
+	public T get(long timeout, TimeUnit unit) throws InterruptedException {
+		if(!isDone){
+			try {
+				Thread.sleep(unit.toMillis(timeout));
+			}
+			catch (InterruptedException e ){}
+		}
+		return result;
 	}
 
 }
