@@ -19,6 +19,5 @@ public class C3POMicroservice extends MicroService {
 
     @Override
     protected void initialize() {
-
     }
 }

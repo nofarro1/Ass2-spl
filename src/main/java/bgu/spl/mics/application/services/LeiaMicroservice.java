@@ -24,6 +24,7 @@ public class LeiaMicroservice extends MicroService {
 
     @Override
     protected void initialize() {
+
     	
     }
 }

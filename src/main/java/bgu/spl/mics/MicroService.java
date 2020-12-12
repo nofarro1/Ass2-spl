@@ -1,5 +1,10 @@
 package bgu.spl.mics;
 
+import jdk.vm.ci.code.site.Call;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * The MicroService is an abstract class that any micro-service in the system
  * must extend. The abstract MicroService class is responsible to get and
@@ -21,6 +26,8 @@ package bgu.spl.mics;
 public abstract class MicroService implements Runnable { 
     private String name;
     private MessageBusImpl messageBus;
+    private Map<Class<? extends Message>, Callback> messageCallbacks=new ConcurrentHashMap<>();;
+
 
 
     /**
@@ -55,7 +62,7 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        //messageCallbacks.putIfAbsent(type,callback); TODO lema ze?
+        messageCallbacks.putIfAbsent(type,callback);
         messageBus.subscribeEvent(type, this);
     }
 
@@ -151,7 +158,20 @@ public abstract class MicroService implements Runnable {
      */
     @Override
     public final void run() {
-    	
+        Message event;
+        //1
+    	messageBus.register(this);
+    	//2
+        try { // TODO: WHAT IT MEANS THE TRY AND CATCH?
+            event = messageBus.awaitMessage(this);
+            //3
+            Callback callback = messageCallbacks.get(event);
+            callback.call(event);
+            //4 TODO: the complete is in the call of each microservice?
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 }

@@ -16,6 +16,8 @@ public class MessageBusImpl implements MessageBus {
 	private volatile ConcurrentHashMap<MicroService, LinkedBlockingQueue<Message>> microservicesQueues= new ConcurrentHashMap();
 	private volatile ConcurrentHashMap <Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> registeredByEventType= new ConcurrentHashMap();
 	private volatile ConcurrentHashMap <Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> registeredByBroadcastType= new ConcurrentHashMap();
+	private volatile ConcurrentHashMap <Event ,Future> eventsAndFuture = new ConcurrentHashMap();
+
 
 
 
@@ -42,7 +44,9 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override @SuppressWarnings("unchecked")
 	public <T> void complete(Event<T> e, T result) {
-		
+		eventsAndFuture.get(e).resolve(result);
+		// TODO: PORQE?
+		eventsAndFuture.remove(e);
 	}
 
 	@Override
@@ -53,17 +57,21 @@ public class MessageBusImpl implements MessageBus {
 				microservicesQueues.get(m).add(b);
 			}
 	}
-
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		// TODO ** do we need here synchronized? **
-
+		// the blocking and concurrent queues takes care on the multiThreading, therefore theres no need in 'synchronized'
 		MicroService m;
-		if (registeredByEventType.get(e.getClass()) != null) {
+		if (registeredByEventType.get(e.getClass()) != null && !registeredByEventType.get(e.getClass()).isEmpty()) {
 			m = registeredByEventType.get(e.getClass()).poll();
-			microservicesQueues.get(m).add(e);
-			// TODO ** how to return the future ?? **
+			if (microservicesQueues.get(m) != null) {
+				microservicesQueues.get(m).add(e);
+				notifyAll();
+				Future<T> f = new Future<>();
+				eventsAndFuture.put(e, f);
+				registeredByEventType.get(e.getClass()).add(m);
+				return f;
+			}
 		}
 		return null;
 	}
@@ -80,8 +88,7 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
-		
-		return null;
+		return microservicesQueues.get(m).take(); // 'take' function waits until theres message to pull from the queue
 	}
 
 	public Object getQueue(String name) { return null; }
