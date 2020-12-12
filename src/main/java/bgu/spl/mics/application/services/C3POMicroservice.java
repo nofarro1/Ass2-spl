@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.services;
 
+import bgu.spl.mics.Callback;
 import bgu.spl.mics.MicroService;
 
 
@@ -19,5 +20,11 @@ public class C3POMicroservice extends MicroService {
 
     @Override
     protected void initialize() {
+        Callback callBack = new Callback() {
+            @Override
+            public void call(Object c) {
+                // deactivateEvent call
+            }
+        };
     }
 }

@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.services;
 
+import bgu.spl.mics.Callback;
 import bgu.spl.mics.MicroService;
 
 /**
@@ -15,6 +16,11 @@ public class LandoMicroservice  extends MicroService {
 
     @Override
     protected void initialize() {
-       
+        Callback callBack = new Callback() {
+            @Override
+            public void call(Object c) {
+                // someEvent call
+            }
+        };
     }
 }
