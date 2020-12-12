@@ -6,6 +6,7 @@ import bgu.spl.mics.Future;
 import bgu.spl.mics.application.messages.DeactivationEvent;
 import bgu.spl.mics.application.services.HanSoloMicroservice;
 import bgu.spl.mics.application.services.LeiaMicroservice;
+import com.google.gson.Gson;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;

@@ -1,18 +1,16 @@
 package bgu.spl.mics.application.services;
 
 
-import bgu.spl.mics.Callback;
 import bgu.spl.mics.MessageBus;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.AttackEvent;
-import bgu.spl.mics.application.messages.DeactivationEvent;
+import bgu.spl.mics.application.messages.FinishBroadcast;
+import bgu.spl.mics.application.messages.TerminateBroadcast;
+import bgu.spl.mics.application.passiveObjects.Diary;
 import bgu.spl.mics.application.passiveObjects.Ewok;
 import bgu.spl.mics.application.passiveObjects.Ewoks;
-import bgu.spl.mics.example.DeactivationEventBroadcast;
-import bgu.spl.mics.example.EventAttackBroadcast;
 
-import javax.swing.text.html.HTMLDocument;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -33,7 +31,7 @@ public class HanSoloMicroservice extends MicroService {
     public HanSoloMicroservice()
     {
         super("Han");
-        messageBus = MessageBusImpl.getInstance(); // TODO**********
+        messageBus = MessageBusImpl.getInstance();
         ewoks= Ewoks.getInstance();
     }
 
@@ -43,26 +41,37 @@ public class HanSoloMicroservice extends MicroService {
         messageBus.register(this);
         this.subscribeEvent(AttackEvent.class, c -> {
             List<Integer> requiredEwoks = c.getSerials();
-            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext();)
-            {
+            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
                 Integer t = (Integer) i.next();
                 Ewok curr = ewoks.getEwok(t.intValue());
-                while(!curr.isAvailable())
+                while (!curr.isAvailable())
                     wait();
                 curr.acquire();
             }
             try {
-                Thread.sleep(c.getDuration()); // TODO**********
+                Thread.sleep(c.getDuration());
+            } catch (InterruptedException e) {
             }
-            catch (InterruptedException e) {}
-            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext();)
-            {
+            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
                 Integer t = (Integer) i.next();
                 Ewok curr = ewoks.getEwok(t.intValue());
                 curr.release();
                 notifyAll();
             }
-            complete(c,true);
+            Diary.getInstance().setTotalAttacks();
+            complete(c, true);
+            });
+        // subscribe to the Broadcast that comes after han finish his attacks
+        FinishBroadcast finishBroadcast = new FinishBroadcast();
+        subscribeBroadcast(finishBroadcast.getClass(), c -> {
+            Diary.getInstance().setHanSoloFinish(System.currentTimeMillis());
+        });
+
+        // subscribeBroadcast and implement the call function for terminateBroadcast
+        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
+            subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+                Diary.getInstance().setHanSoloTerminate(System.currentTimeMillis());
+            this.terminate();
         });
     }
 }

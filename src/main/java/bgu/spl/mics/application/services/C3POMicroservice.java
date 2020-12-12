@@ -2,7 +2,9 @@ package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.*;
 import bgu.spl.mics.application.messages.AttackEvent;
+import bgu.spl.mics.application.messages.FinishBroadcast;
 import bgu.spl.mics.application.messages.TerminateBroadcast;
+import bgu.spl.mics.application.passiveObjects.Diary;
 import bgu.spl.mics.application.passiveObjects.Ewok;
 import bgu.spl.mics.application.passiveObjects.Ewoks;
 
@@ -21,6 +23,7 @@ import java.util.ListIterator;
 public class C3POMicroservice extends MicroService {
     private MessageBus messageBus;
     private Ewoks ewoks;
+    private Diary diary;
 	
     public C3POMicroservice() {
         super("C3PO");
@@ -51,13 +54,20 @@ public class C3POMicroservice extends MicroService {
                         curr.release();
                         notifyAll();
                     }
+                    Diary.getInstance().setTotalAttacks();
                     complete(c, true);
                 });
+
+        // subscribe to the Broadcast that comes after c3po finish his attacks
+        FinishBroadcast finishBroadcast = new FinishBroadcast();
+        subscribeBroadcast(finishBroadcast.getClass(), c -> {
+            Diary.getInstance().setC3POFinish(System.currentTimeMillis());
+        });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
         TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
         subscribeBroadcast(terminateBroadcast.getClass(), c -> {
-            // TODO: put all details in diary
+            Diary.getInstance().setC3POTerminate(System.currentTimeMillis());
             this.terminate();
         });
 

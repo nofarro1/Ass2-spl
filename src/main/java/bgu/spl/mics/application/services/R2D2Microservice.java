@@ -2,7 +2,8 @@ package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.*;
 import bgu.spl.mics.application.messages.DeactivationEvent;
-import bgu.spl.mics.example.DeactivationEventBroadcast;
+import bgu.spl.mics.application.messages.TerminateBroadcast;
+import bgu.spl.mics.application.passiveObjects.Diary;
 
 import static java.lang.Thread.sleep;
 
@@ -27,12 +28,20 @@ public class R2D2Microservice extends MicroService {
     @Override
     protected void initialize() {
         messageBus.register(this);
-        this.subscribeEvent(DeactivationEvent.class, c -> {
+        subscribeEvent(DeactivationEvent.class, c -> {
             try{
                 Thread.sleep(duration);
             }
             catch (InterruptedException e) {}
             complete(c,true);
+            Diary.getInstance().setR2D2Deactivate(System.currentTimeMillis());
+        });
+
+        // subscribeBroadcast and implement the call function for terminateBroadcast
+        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
+        subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+            Diary.getInstance().setR2D2Terminate(System.currentTimeMillis());
+            this.terminate();
         });
     }
 }

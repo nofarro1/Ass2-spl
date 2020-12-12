@@ -20,7 +20,6 @@ public class MessageBusImpl implements MessageBus {
 
 
 
-
 	private static class SingleHolder{
 		private static MessageBus instance = new MessageBusImpl();
 	}
@@ -107,11 +106,8 @@ public class MessageBusImpl implements MessageBus {
 
 	public Object getQueue(String name) { return null; }
 
-	private AtomicInteger getTotalAttacks(){
-		return totalAttacks;
-	}
 
-	private void incrementTotalAttacks(){
-		totalAttacks.getAndIncrement();
+	private boolean IsFinishDeactivation(Event e) {
+		return eventsAndFuture.get(e).isDone();
 	}
 }
