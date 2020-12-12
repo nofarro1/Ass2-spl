@@ -15,26 +15,24 @@ import static java.lang.Thread.sleep;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class R2D2Microservice extends MicroService {
-    private MessageBus messageBus;
+    private MessageBusImpl messageBus;
     private long duration;
 
     public R2D2Microservice(long duration) {
         super("R2D2");
         this.duration=duration;
+        messageBus = (MessageBusImpl) MessageBusImpl.getInstance(); // TODO**********
     }
 
     @Override
     protected void initialize() {
-        messageBus = MessageBusImpl.getInstance(); // TODO**********
         messageBus.register(this);
         this.subscribeEvent(DeactivationEvent.class, c -> {
             try{
                 Thread.sleep(duration);
             }
             catch (InterruptedException e) {}
-            c.getFuture().resolve("Done");
-            DeactivationEventBroadcast deactivationEventBroadcast = new DeactivationEventBroadcast();
-            messageBus.sendBroadcast(deactivationEventBroadcast);
+            complete(c,true);
         });
     }
 }

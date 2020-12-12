@@ -136,7 +136,7 @@ public abstract class MicroService implements Runnable {
     /**
      * this method is called once when the event loop starts.
      */
-    protected abstract void initialize();
+    protected abstract void initialize() throws InterruptedException;
 
     /**
      * Signals the event loop that it must terminate after handling the current
