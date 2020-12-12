@@ -2,13 +2,12 @@ package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.*;
 import bgu.spl.mics.application.messages.AttackEvent;
-import bgu.spl.mics.application.passiveObjects.Attack;
+import bgu.spl.mics.application.messages.TerminateBroadcast;
+import bgu.spl.mics.application.passiveObjects.Ewok;
 import bgu.spl.mics.application.passiveObjects.Ewoks;
-import bgu.spl.mics.Callback;
 
-import java.sql.SQLOutput;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ListIterator;
 
 
 /**
@@ -32,11 +31,35 @@ public class C3POMicroservice extends MicroService {
     @Override
     protected void initialize() {
         messageBus.register(this);
-        subscribeEvent(AttackEvent.class, c -> {
-            List<Integer> requiredEwoks = c.getSerials();
-        });
-        messageBus.subscribeBroadcast();
 
+        // subscribeEvent and implement the call function for AttackEvent
+        subscribeEvent(AttackEvent.class, c -> {
+                    List<Integer> requiredEwoks = c.getSerials();
+                    for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                        Integer t = (Integer) i.next();
+                        Ewok curr = ewoks.getEwok(t.intValue());
+                        while (!curr.isAvailable())
+                            wait();
+                        curr.acquire();
+                    }
+                    try {
+                        Thread.sleep(c.getDuration());
+                    } catch (InterruptedException e) { }
+                    for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                        Integer t = (Integer) i.next();
+                        Ewok curr = ewoks.getEwok(t.intValue());
+                        curr.release();
+                        notifyAll();
+                    }
+                    complete(c, true);
+                });
+
+        // subscribeBroadcast and implement the call function for terminateBroadcast
+        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
+        subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+            // TODO: put all details in diary
+            this.terminate();
+        });
 
     }
 }

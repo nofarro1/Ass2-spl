@@ -1,11 +1,10 @@
 package bgu.spl.mics;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The {@link MessageBusImpl class is the implementation of the MessageBus interface.
@@ -17,17 +16,18 @@ public class MessageBusImpl implements MessageBus {
 	private volatile ConcurrentHashMap <Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> registeredByEventType= new ConcurrentHashMap();
 	private volatile ConcurrentHashMap <Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> registeredByBroadcastType= new ConcurrentHashMap();
 	private volatile ConcurrentHashMap <Event ,Future> eventsAndFuture = new ConcurrentHashMap();
+	private AtomicInteger totalAttacks;
 
 
 
 
-	private static class InstanceHolder{
+	private static class SingleHolder{
 		private static MessageBus instance = new MessageBusImpl();
 	}
 
 	// returns the instance
 	public static MessageBus getInstance(){
-		return MessageBusImpl.InstanceHolder.instance;
+		return MessageBusImpl.SingleHolder.instance;
 	}
 	
 	@Override
@@ -45,13 +45,11 @@ public class MessageBusImpl implements MessageBus {
 	@Override @SuppressWarnings("unchecked")
 	public <T> void complete(Event<T> e, T result) {
 		eventsAndFuture.get(e).resolve(result);
-		// TODO: PORQE?
 		eventsAndFuture.remove(e);
 	}
 
 	@Override
 	public void sendBroadcast(Broadcast b) {
-		// TODO ** do we need here synchronized? **
 		if (registeredByBroadcastType.get(b) != null)
 			for (MicroService m: registeredByBroadcastType.get(b)){
 				microservicesQueues.get(m).add(b);
@@ -83,7 +81,23 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void unregister(MicroService m) {
-		microservicesQueues.remove(m);
+		//remove m from the events queue
+		for (Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> entry : registeredByEventType.entrySet()) {
+			ConcurrentLinkedQueue<MicroService> value = entry.getValue();
+			if (value.contains(m))
+				value.remove(m);
+		}
+
+		//remove m from the broadcast queue
+		for (Map.Entry<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> entry : registeredByBroadcastType.entrySet()) {
+			ConcurrentLinkedQueue<MicroService> value = entry.getValue();
+			if (value.contains(m))
+				value.remove(m);
+		}
+
+		//delete m's queue
+			if (microservicesQueues.contains(m))
+				microservicesQueues.remove(m);
 	}
 
 	@Override
@@ -92,4 +106,12 @@ public class MessageBusImpl implements MessageBus {
 	}
 
 	public Object getQueue(String name) { return null; }
+
+	private AtomicInteger getTotalAttacks(){
+		return totalAttacks;
+	}
+
+	private void incrementTotalAttacks(){
+		totalAttacks.getAndIncrement();
+	}
 }

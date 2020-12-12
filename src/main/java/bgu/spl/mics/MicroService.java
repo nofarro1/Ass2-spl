@@ -4,6 +4,7 @@ import jdk.vm.ci.code.site.Call;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The MicroService is an abstract class that any micro-service in the system
@@ -25,9 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class MicroService implements Runnable { 
     private String name;
-    private MessageBusImpl messageBus;
-    private Map<Class<? extends Message>, Callback> messageCallbacks=new ConcurrentHashMap<>();;
-
+    private MessageBus messageBus;
+    private Map<Class<? extends Message>, Callback> callbacks=new ConcurrentHashMap<>();;
+    private boolean isTerminated;
 
 
     /**
@@ -36,7 +37,8 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
     	this.name = name;
-    	messageBus = new MessageBusImpl();
+    	messageBus = MessageBusImpl.getInstance();
+    	isTerminated = false;
     }
 
 
@@ -62,7 +64,7 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        messageCallbacks.putIfAbsent(type,callback);
+        callbacks.putIfAbsent(type,callback);
         messageBus.subscribeEvent(type, this);
     }
 
@@ -87,6 +89,7 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
+        callbacks.putIfAbsent(type, callback);
     	messageBus.subscribeBroadcast(type, this);
     }
 
@@ -103,7 +106,6 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-    	
         return messageBus.sendEvent(e);
     }
 
@@ -128,7 +130,7 @@ public abstract class MicroService implements Runnable {
      *               {@code e}.
      */
     protected final <T> void complete(Event<T> e, T result) {
-    	
+    	messageBus.complete(e,result);
     }
 
     /**
@@ -141,7 +143,7 @@ public abstract class MicroService implements Runnable {
      * message.
      */
     protected final void terminate() {
-    	
+        isTerminated = true;
     }
 
     /**
@@ -158,20 +160,18 @@ public abstract class MicroService implements Runnable {
      */
     @Override
     public final void run() {
-        Message event;
-        //1
-    	messageBus.register(this);
-    	//2
-        try { // TODO: WHAT IT MEANS THE TRY AND CATCH?
-            event = messageBus.awaitMessage(this);
-            //3
-            Callback callback = messageCallbacks.get(event);
-            callback.call(event);
-            //4 TODO: the complete is in the call of each microservice?
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        messageBus.register(this);
+        initialize();
+        while (!isTerminated) {
+            Message event;
+            try {
+                event = messageBus.awaitMessage(this);
+                callbacks.get(event).call(event);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+        messageBus.unregister(this);
     }
 
 }
