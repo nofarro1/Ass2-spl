@@ -1,9 +1,6 @@
 package bgu.spl.mics.application.services;
 
-import bgu.spl.mics.Broadcast;
-import bgu.spl.mics.Callback;
-import bgu.spl.mics.MessageBusImpl;
-import bgu.spl.mics.MicroService;
+import bgu.spl.mics.*;
 import bgu.spl.mics.application.messages.DeactivationEvent;
 import bgu.spl.mics.example.DeactivationEventBroadcast;
 
@@ -18,7 +15,7 @@ import static java.lang.Thread.sleep;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class R2D2Microservice extends MicroService {
-    private MessageBusImpl messageBus;
+    private MessageBus messageBus;
     private long duration;
 
     public R2D2Microservice(long duration) {
@@ -28,7 +25,7 @@ public class R2D2Microservice extends MicroService {
 
     @Override
     protected void initialize() {
-        //messageBus = MessageBusImpl.getInstance(); // TODO**********
+        messageBus = MessageBusImpl.getInstance(); // TODO**********
         messageBus.register(this);
         this.subscribeEvent(DeactivationEvent.class, c -> {
             try{

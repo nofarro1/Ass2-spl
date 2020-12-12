@@ -21,7 +21,7 @@ public class Future<T> {
 		this.result=result;
 	}
 
-	public Future(){}
+	public Future(){ isDone=false;}
 
 	/**
      * retrieves the result the Future object holds if it has been resolved.
@@ -31,9 +31,19 @@ public class Future<T> {
      * @return return the result of type T if it is available, if not wait until it is available.
      * 	       
      */
-	public T get() {
-		
-        return null; 
+	public T get() throws InterruptedException {
+		/*if(isDone) {
+			return result;
+		}
+        else {
+			wait();
+			return get();
+		}
+		 */
+		while(!isDone){
+			wait();
+		}
+		return result;
 	}
 	
 	/**
@@ -43,6 +53,7 @@ public class Future<T> {
 		if(result!=null){
 			this.result=result;
 			isDone=true;
+			notifyAll();
 		}
 	}
 	
@@ -64,9 +75,14 @@ public class Future<T> {
      * 	       wait for {@code timeout} TimeUnits {@code unit}. If time has
      *         elapsed, return null.
      */
-	public T get(long timeout, TimeUnit unit) {
-		
-        return null;
+	public T get(long timeout, TimeUnit unit) throws InterruptedException {
+		if(!isDone){
+			try {
+				Thread.sleep(unit.toMillis(timeout));
+			}
+			catch (InterruptedException e ){}
+		}
+		return result;
 	}
 
 }
