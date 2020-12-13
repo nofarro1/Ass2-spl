@@ -27,7 +27,7 @@ public class Ewoks {
         instance.makeEwoks(size);
     }
 
-    private void makeEwoks (int size)
+    public void makeEwoks (int size)
     {
         ewoks = new Ewok[size+1];
         for(int i=1;i<ewoks.length;i++){
