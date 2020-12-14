@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.passiveObjects;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Passive data-object representing a forest creature summoned when HanSolo and C3PO receive AttackEvents.
  * You must not alter any of the given public methods of this class.
@@ -8,29 +10,27 @@ package bgu.spl.mics.application.passiveObjects;
  */
 public class Ewok {
 	private int serialNumber;
-	private volatile boolean available;
+	private volatile AtomicBoolean available;
 
 	public Ewok(){}
 
 	public Ewok(int serialNumber){
 	    this.serialNumber=serialNumber;
-	    available=true;
+	    available = new AtomicBoolean(true);
     }
     /**
      * Acquires an Ewok
      */
-    public void acquire() {
-		available=true;
+    public synchronized void acquire() {
+		available.compareAndSet(true, false);
     }
 
     /**
      * release an Ewok
      */
-    public void release() {
-    	available=false;
+    public synchronized void release() {
+    	available.compareAndSet(false, true);
     }
 
-    public boolean isAvailable(){return available;}
-
-    public int getSerialNumber(){return serialNumber;}
+    public boolean isAvailable(){return available.get();}
 }

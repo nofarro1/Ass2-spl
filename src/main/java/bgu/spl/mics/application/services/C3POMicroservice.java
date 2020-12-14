@@ -35,7 +35,6 @@ public class C3POMicroservice extends MicroService {
         subscribeEvent(AttackEvent.class, c -> {
             System.out.println("C3PO start AttackEvent");
             List<Integer> requiredEwoks = c.getSerials();
-            //synchronized (ewoks) {
                 for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
                     Integer t = (Integer) i.next();
                     Ewok curr = ewoks.getEwok(t.intValue());
@@ -43,6 +42,7 @@ public class C3POMicroservice extends MicroService {
                         while (!curr.isAvailable())
                             curr.wait();
                         curr.acquire();
+                        System.out.println("C3PO acquired ewok #"+ t.intValue());
                     }
                 }
                 try {
@@ -54,8 +54,8 @@ public class C3POMicroservice extends MicroService {
                     synchronized (curr) {
                         curr.release();
                         curr.notifyAll();
+                        System.out.println("C3PO released ewok #"+ t.intValue());
                     }
-                //}
             }
             Diary.getInstance().setTotalAttacks();
             complete(c, true);

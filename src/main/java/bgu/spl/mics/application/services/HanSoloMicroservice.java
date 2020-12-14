@@ -39,7 +39,6 @@ public class HanSoloMicroservice extends MicroService {
         this.subscribeEvent(AttackEvent.class, c -> {
             System.out.println("HanSolo start AttackEvent");
             List<Integer> requiredEwoks = c.getSerials();
-            //synchronized (ewoks) {
                 for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
                     Integer t = (Integer) i.next();
                     Ewok curr = ewoks.getEwok(t.intValue());
@@ -47,6 +46,7 @@ public class HanSoloMicroservice extends MicroService {
                         while (!curr.isAvailable())
                             curr.wait();
                         curr.acquire();
+                        System.out.println("Han acquired ewok #"+ t.intValue());
                     }
                 }
                 try {
@@ -58,9 +58,9 @@ public class HanSoloMicroservice extends MicroService {
                     synchronized (curr) {
                         curr.release();
                         curr.notifyAll();
+                        System.out.println("Han released ewok #"+ t.intValue());
                     }
                 }
-            //}
             Diary.getInstance().setTotalAttacks();
             complete(c, true);
             System.out.println("HanSolo complete AttackEvent");

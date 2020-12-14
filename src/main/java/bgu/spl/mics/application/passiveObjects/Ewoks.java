@@ -1,6 +1,9 @@
 package bgu.spl.mics.application.passiveObjects;
 
 
+import bgu.spl.mics.MessageBus;
+import bgu.spl.mics.MessageBusImpl;
+
 import java.util.concurrent.Semaphore;
 
 /**
@@ -14,25 +17,20 @@ import java.util.concurrent.Semaphore;
 public class Ewoks {
     private static Ewoks instance;
     private Ewok [] ewoks;
-    private Semaphore lock = new Semaphore(1,true);
 
-    private Ewoks(){}
-
-    public static Ewoks getInstance(){
-        if(instance==null){ instance = new Ewoks();}
-        return instance;
+    private static class SingleHolder{
+        private static Ewoks instance = new Ewoks();
     }
 
-    public void Ewoksinit (int size){
-        instance.makeEwoks(size);
+    public static Ewoks getInstance(){
+        return Ewoks.SingleHolder.instance;
     }
 
     public void makeEwoks (int size)
     {
         ewoks = new Ewok[size+1];
-        for(int i=1;i<ewoks.length;i++){
+        for(int i=1 ; i<ewoks.length ; i++)
             ewoks[i] = new Ewok(i);
-        }
     }
 
     public Ewok getEwok(int i){return ewoks[i];}
