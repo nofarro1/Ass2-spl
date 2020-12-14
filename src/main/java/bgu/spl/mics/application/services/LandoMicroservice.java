@@ -23,12 +23,9 @@ public class LandoMicroservice  extends MicroService {
 
     @Override
     protected void initialize() {
-        MessageBus messageBus = MessageBusImpl.getInstance();
-        messageBus.register(this);
-
         // subscribeBroadcast and implement the call function for terminateBroadcast
         TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
-        subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+        subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setLandoTerminate(System.currentTimeMillis());
             this.terminate();
         });

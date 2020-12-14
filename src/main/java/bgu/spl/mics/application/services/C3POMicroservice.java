@@ -21,20 +21,16 @@ import java.util.ListIterator;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class C3POMicroservice extends MicroService {
-    private MessageBus messageBus;
     private Ewoks ewoks;
     private Diary diary;
 	
     public C3POMicroservice() {
         super("C3PO");
-        messageBus = MessageBusImpl.getInstance();
         ewoks = Ewoks.getInstance();
     }
 
     @Override
     protected void initialize() {
-        messageBus.register(this);
-
         // subscribeEvent and implement the call function for AttackEvent
         subscribeEvent(AttackEvent.class, c -> {
                     List<Integer> requiredEwoks = c.getSerials();
@@ -59,14 +55,12 @@ public class C3POMicroservice extends MicroService {
                 });
 
         // subscribe to the Broadcast that comes after c3po finish his attacks
-        FinishBroadcast finishBroadcast = new FinishBroadcast();
-        subscribeBroadcast(finishBroadcast.getClass(), c -> {
+        subscribeBroadcast(FinishBroadcast.class, c -> {
             Diary.getInstance().setC3POFinish(System.currentTimeMillis());
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
-        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
-        subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+        subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setC3POTerminate(System.currentTimeMillis());
             this.terminate();
         });

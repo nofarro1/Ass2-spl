@@ -17,9 +17,6 @@ public class Future<T> {
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
-	public Future(T result) {
-		this.result=result;
-	}
 
 	public Future(){ isDone=false;}
 
@@ -32,14 +29,6 @@ public class Future<T> {
      * 	       
      */
 	public T get() throws InterruptedException {
-		/*if(isDone) {
-			return result;
-		}
-        else {
-			wait();
-			return get();
-		}
-		 */
 		while(!isDone){
 			wait();
 		}

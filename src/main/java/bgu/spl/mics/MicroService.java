@@ -1,10 +1,7 @@
 package bgu.spl.mics;
 
-import jdk.vm.ci.code.site.Call;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The MicroService is an abstract class that any micro-service in the system
@@ -64,7 +61,9 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        callbacks.putIfAbsent(type,callback);
+        synchronized (callbacks) {
+            callbacks.putIfAbsent(type, callback);
+        }
         messageBus.subscribeEvent(type, this);
     }
 
@@ -89,7 +88,9 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        callbacks.putIfAbsent(type, callback);
+        synchronized (callback) {
+            callbacks.putIfAbsent(type, callback);
+        }
     	messageBus.subscribeBroadcast(type, this);
     }
 
@@ -166,16 +167,18 @@ public abstract class MicroService implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
         while (!isTerminated) {
             Message event;
             try {
                 event = messageBus.awaitMessage(this);
-                callbacks.get(event).call(event);
+                if (callbacks.get(event.getClass()) != null)
+                    callbacks.get(event.getClass()).call(event);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+
         messageBus.unregister(this);
     }
-
 }

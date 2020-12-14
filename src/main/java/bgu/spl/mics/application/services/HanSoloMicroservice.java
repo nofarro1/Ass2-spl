@@ -25,20 +25,17 @@ import static java.lang.Thread.sleep;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class HanSoloMicroservice extends MicroService {
-    private MessageBus messageBus;
     private Ewoks ewoks;
 
     public HanSoloMicroservice()
     {
         super("Han");
-        messageBus = MessageBusImpl.getInstance();
         ewoks= Ewoks.getInstance();
     }
 
 
     @Override
     protected void initialize() {
-        messageBus.register(this);
         this.subscribeEvent(AttackEvent.class, c -> {
             List<Integer> requiredEwoks = c.getSerials();
             for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
@@ -62,14 +59,12 @@ public class HanSoloMicroservice extends MicroService {
             complete(c, true);
             });
         // subscribe to the Broadcast that comes after han finish his attacks
-        FinishBroadcast finishBroadcast = new FinishBroadcast();
-        subscribeBroadcast(finishBroadcast.getClass(), c -> {
+        subscribeBroadcast(FinishBroadcast.class, c -> {
             Diary.getInstance().setHanSoloFinish(System.currentTimeMillis());
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
-        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
-            subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+            subscribeBroadcast(TerminateBroadcast.class, c -> {
                 Diary.getInstance().setHanSoloTerminate(System.currentTimeMillis());
             this.terminate();
         });

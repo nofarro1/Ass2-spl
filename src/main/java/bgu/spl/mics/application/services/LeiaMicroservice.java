@@ -14,7 +14,6 @@ import bgu.spl.mics.application.passiveObjects.Diary;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class LeiaMicroservice extends MicroService {
-    private MessageBusImpl messageBus;
     private Attack[] attacks;
     private AttackEvent [] attackEvents;
     private int count;
@@ -25,23 +24,18 @@ public class LeiaMicroservice extends MicroService {
         this.attacks = attacks;
         count=attacks.length;
         attackEvents = new AttackEvent[attacks.length];
-        messageBus = (MessageBusImpl) MessageBusImpl.getInstance(); // TODO**********
     }
 
     @Override
     protected void initialize() throws InterruptedException {
-        messageBus.register(this);
-
         // subscribe to terminate broadcast
-        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
-        subscribeBroadcast(terminateBroadcast.getClass(), c -> {
+        subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setLeiaTerminate(System.currentTimeMillis());
             this.terminate();
-
         });
 
         // send the attack events
-        for(int i=0;i<attackEvents.length;i++) {
+        for(int i=0 ; i<attackEvents.length ; i++) {
             attackEvents[i] = new AttackEvent(attacks[i]);
             sendEvent(attackEvents[i]);
         }
@@ -51,14 +45,15 @@ public class LeiaMicroservice extends MicroService {
         sendBroadcast(finish);
 
         // when all the attacks complete, send deactivationEvent
-        while (Diary.getInstance().getTotalAttacks().intValue() != attacks.length)
-            wait();
-        DeactivationEvent deactivationEvent = new DeactivationEvent();
-        deactivateFuture = sendEvent(deactivationEvent);
+        synchronized (Diary.getInstance().getTotalAttacks()) {
+            while (Diary.getInstance().getTotalAttacks().intValue() != attacks.length)
+                Diary.getInstance().getTotalAttacks().wait();
+            DeactivationEvent deactivationEvent = new DeactivationEvent();
+            deactivateFuture = sendEvent(deactivationEvent);
+        }
 
         deactivateFuture.get(); // <- wait function
         BombDestroyerEvent bombDestroyerEvent = new BombDestroyerEvent();
-        messageBus.sendEvent(bombDestroyerEvent);
-
+        sendEvent(bombDestroyerEvent);
     }
 }

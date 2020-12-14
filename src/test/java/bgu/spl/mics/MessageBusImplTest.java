@@ -1,29 +1,37 @@
 package bgu.spl.mics;
 
 import bgu.spl.mics.application.messages.AttackEvent;
+import bgu.spl.mics.application.passiveObjects.Attack;
 import bgu.spl.mics.application.services.C3POMicroservice;
 import bgu.spl.mics.application.services.HanSoloMicroservice;
 import bgu.spl.mics.example.ExampleBroadcast;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
 class MessageBusImplTest {
     private MessageBusImpl messageBus;
-    //private Subscriber subscriber1;
-    //private Subscriber subscriber2 ;
     private AttackEvent attackEvent;
     private MicroService hanSolo;
     private Broadcast broadcast;
+    private Attack attack;
 
 
     @BeforeEach
     public void setUp() {
         messageBus = new MessageBusImpl();
         hanSolo = new HanSoloMicroservice();
-        attackEvent = new AttackEvent();
+        List<Integer> attackList = new LinkedList<>();
+        attackList.add(2);
+        attackList.add(1);
+        attackList.add(4);
+        attack = new Attack(attackList, 1000);
+        attackEvent = new AttackEvent(attack);
         broadcast = new ExampleBroadcast("1");
     }
 

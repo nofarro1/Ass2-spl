@@ -1,9 +1,8 @@
 package bgu.spl.mics.application;
 
-//import com.google.gson.Gson;
-
+import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.passiveObjects.Attack;
 import bgu.spl.mics.application.passiveObjects.Diary;
-import bgu.spl.mics.application.passiveObjects.Ewok;
 import bgu.spl.mics.application.passiveObjects.Ewoks;
 import bgu.spl.mics.application.passiveObjects.Input;
 import bgu.spl.mics.application.services.*;
@@ -30,16 +29,21 @@ public class Main {
 		Input input = gson.fromJson(read, Input.class);
 		Diary diary = Diary.getInstance();
 		Ewoks ewoks = Ewoks.getInstance();
-		ewoks.makeEwoks(input.getNumberOfEwoks());
+		ewoks.makeEwoks(input.getEwoks());
 
-		Thread Leia = new Thread(new LeiaMicroservice(input.getAttacks()));
-		Thread HanSolo = new Thread(new HanSoloMicroservice());
+		MicroService leia = new LeiaMicroservice(input.getAttacks());
+		Thread Leia = new Thread(leia);
+		MicroService hanSolo = new HanSoloMicroservice();
+		Thread HanSolo = new Thread(hanSolo);
 		HanSolo.start();
-		Thread C3PO = new Thread(new C3POMicroservice());
+		MicroService c3po = new C3POMicroservice();
+		Thread C3PO = new Thread(c3po);
 		C3PO.start();
-		Thread R2D2 = new Thread(new R2D2Microservice(input.getR2D2Duration()));
+		MicroService r2d2 = new R2D2Microservice(input.getR2D2());
+		Thread R2D2 = new Thread(r2d2);
 		R2D2.start();
-		Thread Lando = new Thread(new LandoMicroservice(input.getLandoDuration()));
+		MicroService lando = new LandoMicroservice(input.getLando());
+		Thread Lando = new Thread(lando);
 		Lando.start();
 
 		try{
@@ -61,7 +65,8 @@ public class Main {
 
 		Gson output = new GsonBuilder().setPrettyPrinting().create();
 		try{
-			FileWriter file = new FileWriter(args[1]);
+			//FileWriter file = new FileWriter(args[1]);
+			FileWriter file = new FileWriter("output.json");
 			output.toJson(diary, file);
 			file.flush();
 			file.close();
