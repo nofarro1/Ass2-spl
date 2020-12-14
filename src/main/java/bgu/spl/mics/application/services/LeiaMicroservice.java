@@ -31,6 +31,7 @@ public class LeiaMicroservice extends MicroService {
         // subscribe to terminate broadcast
         subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setLeiaTerminate(System.currentTimeMillis());
+            System.out.println("Leia terminated");
             this.terminate();
         });
 
@@ -39,6 +40,8 @@ public class LeiaMicroservice extends MicroService {
             attackEvents[i] = new AttackEvent(attacks[i]);
             sendEvent(attackEvents[i]);
         }
+
+        System.out.println("Leia complete sending AttackEvents");
 
         // broadcast to know when hanSolo and c3po finish there attacks
         FinishBroadcast finish = new FinishBroadcast();
@@ -51,9 +54,11 @@ public class LeiaMicroservice extends MicroService {
             DeactivationEvent deactivationEvent = new DeactivationEvent();
             deactivateFuture = sendEvent(deactivationEvent);
         }
+        System.out.println("Leia complete sending DeactivateEvents");
 
         deactivateFuture.get(); // <- wait function
         BombDestroyerEvent bombDestroyerEvent = new BombDestroyerEvent();
         sendEvent(bombDestroyerEvent);
+        System.out.println("Leia complete sending BombEvents");
     }
 }

@@ -24,13 +24,14 @@ public class LandoMicroservice  extends MicroService {
     @Override
     protected void initialize() {
         // subscribeBroadcast and implement the call function for terminateBroadcast
-        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
         subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setLandoTerminate(System.currentTimeMillis());
+            System.out.println("Lando terminated");
             this.terminate();
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
+        TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
         subscribeEvent(BombDestroyerEvent.class, c -> {
             try{
                 Thread.sleep(duration);
@@ -38,6 +39,7 @@ public class LandoMicroservice  extends MicroService {
             catch (InterruptedException e) {}
             sendBroadcast(terminateBroadcast);
             complete(c, true);
+            System.out.println("Lando complete BombEvent");
         });
     }
 }

@@ -28,7 +28,7 @@ public class Future<T> {
      * @return return the result of type T if it is available, if not wait until it is available.
      * 	       
      */
-	public T get() throws InterruptedException {
+	public synchronized T get() throws InterruptedException {
 		while(!isDone){
 			wait();
 		}
@@ -38,10 +38,10 @@ public class Future<T> {
 	/**
      * Resolves the result of this Future object.
      */
-	public void resolve (T result) {
-		if(result!=null){
-			this.result=result;
-			isDone=true;
+	public synchronized void resolve (T result) {
+		if (result != null) {
+			this.result = result;
+			isDone = true;
 			notifyAll();
 		}
 	}

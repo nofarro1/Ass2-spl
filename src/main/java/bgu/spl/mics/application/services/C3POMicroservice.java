@@ -33,35 +33,45 @@ public class C3POMicroservice extends MicroService {
     protected void initialize() {
         // subscribeEvent and implement the call function for AttackEvent
         subscribeEvent(AttackEvent.class, c -> {
-                    List<Integer> requiredEwoks = c.getSerials();
-                    for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                        Integer t = (Integer) i.next();
-                        Ewok curr = ewoks.getEwok(t.intValue());
+            System.out.println("C3PO start AttackEvent");
+            List<Integer> requiredEwoks = c.getSerials();
+            //synchronized (ewoks) {
+                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                    Integer t = (Integer) i.next();
+                    Ewok curr = ewoks.getEwok(t.intValue());
+                    synchronized (curr) {
                         while (!curr.isAvailable())
-                            wait();
+                            curr.wait();
                         curr.acquire();
                     }
-                    try {
-                        Thread.sleep(c.getDuration());
-                    } catch (InterruptedException e) { }
-                    for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                        Integer t = (Integer) i.next();
-                        Ewok curr = ewoks.getEwok(t.intValue());
+                }
+                try {
+                    Thread.sleep(c.getDuration());
+                } catch (InterruptedException e) { }
+                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                    Integer t = (Integer) i.next();
+                    Ewok curr = ewoks.getEwok(t.intValue());
+                    synchronized (curr) {
                         curr.release();
-                        notifyAll();
+                        curr.notifyAll();
                     }
-                    Diary.getInstance().setTotalAttacks();
-                    complete(c, true);
+                //}
+            }
+            Diary.getInstance().setTotalAttacks();
+            complete(c, true);
+            System.out.println("C3PO complete AttackEvent");
                 });
 
         // subscribe to the Broadcast that comes after c3po finish his attacks
         subscribeBroadcast(FinishBroadcast.class, c -> {
             Diary.getInstance().setC3POFinish(System.currentTimeMillis());
+            System.out.println("C3PO finish all his AttackEvent");
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
         subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setC3POTerminate(System.currentTimeMillis());
+            System.out.println("C3PO terminated");
             this.terminate();
         });
 

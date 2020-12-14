@@ -37,8 +37,10 @@ public class Diary {
     };
 
     public void setTotalAttacks() {
-        totalAttacks.compareAndSet(totalAttacks.intValue(),totalAttacks.getAndIncrement());
-        totalAttacks.notifyAll();
+        synchronized (totalAttacks) {
+            totalAttacks.compareAndSet(totalAttacks.intValue(), totalAttacks.getAndIncrement());
+            totalAttacks.notifyAll();
+        }
     }
 
     public long getHanSoloFinish() {

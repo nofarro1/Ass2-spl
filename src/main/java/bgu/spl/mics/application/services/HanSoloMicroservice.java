@@ -37,36 +37,46 @@ public class HanSoloMicroservice extends MicroService {
     @Override
     protected void initialize() {
         this.subscribeEvent(AttackEvent.class, c -> {
+            System.out.println("HanSolo start AttackEvent");
             List<Integer> requiredEwoks = c.getSerials();
-            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                Integer t = (Integer) i.next();
-                Ewok curr = ewoks.getEwok(t.intValue());
-                while (!curr.isAvailable())
-                    wait();
-                curr.acquire();
-            }
-            try {
-                Thread.sleep(c.getDuration());
-            } catch (InterruptedException e) {
-            }
-            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                Integer t = (Integer) i.next();
-                Ewok curr = ewoks.getEwok(t.intValue());
-                curr.release();
-                notifyAll();
-            }
+            //synchronized (ewoks) {
+                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                    Integer t = (Integer) i.next();
+                    Ewok curr = ewoks.getEwok(t.intValue());
+                    synchronized (curr) {
+                        while (!curr.isAvailable())
+                            curr.wait();
+                        curr.acquire();
+                    }
+                }
+                try {
+                    Thread.sleep(c.getDuration());
+                } catch (InterruptedException e) {}
+                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                    Integer t = (Integer) i.next();
+                    Ewok curr = ewoks.getEwok(t.intValue());
+                    synchronized (curr) {
+                        curr.release();
+                        curr.notifyAll();
+                    }
+                }
+            //}
             Diary.getInstance().setTotalAttacks();
             complete(c, true);
+            System.out.println("HanSolo complete AttackEvent");
             });
         // subscribe to the Broadcast that comes after han finish his attacks
         subscribeBroadcast(FinishBroadcast.class, c -> {
             Diary.getInstance().setHanSoloFinish(System.currentTimeMillis());
+            System.out.println("HanSolo finish all his AttackEvent");
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
             subscribeBroadcast(TerminateBroadcast.class, c -> {
                 Diary.getInstance().setHanSoloTerminate(System.currentTimeMillis());
+                System.out.println("HanSolo terminated");
             this.terminate();
         });
+
     }
 }

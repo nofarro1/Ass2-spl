@@ -14,23 +14,7 @@ public class AttackEvent implements Event<Boolean> {
     public AttackEvent(Attack attack)
     {
         duration = attack.getDuration();
-        //TODO: ********* DELETE!!!!!!! *********
-        for (Integer num: attack.getSerials()) {
-            System.out.println("serial Numbers List");
-            System.out.println(num + ", ");
-        }
-        //TODO: ********* DELETE!!!!!!! *********
-
         serials = sortSerials(attack.getSerials());
-
-        //TODO: ********* DELETE!!!!!!! *********
-        for (Integer num: serials) {
-            System.out.println("serial List is sorted?");
-            System.out.println(num + ", ");
-        }
-        //TODO: ********* DELETE!!!!!!! *********
-
-        this.duration = attack.getDuration();
     }
 
     private List<Integer> sortSerials(List<Integer> serialNumbers) {

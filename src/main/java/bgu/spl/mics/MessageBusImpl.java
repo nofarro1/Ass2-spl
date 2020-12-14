@@ -1,10 +1,7 @@
 package bgu.spl.mics;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -17,8 +14,6 @@ public class MessageBusImpl implements MessageBus {
 	private volatile ConcurrentHashMap <Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> registeredByEventType= new ConcurrentHashMap();
 	private volatile ConcurrentHashMap <Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> registeredByBroadcastType= new ConcurrentHashMap();
 	private volatile ConcurrentHashMap <Event ,Future> eventsAndFuture = new ConcurrentHashMap();
-	private AtomicInteger totalAttacks;
-
 
 
 	private static class SingleHolder{
@@ -53,7 +48,6 @@ public class MessageBusImpl implements MessageBus {
 	public <T> void complete(Event<T> e, T result) {
 		synchronized (eventsAndFuture) {
 			eventsAndFuture.get(e).resolve(result);
-			eventsAndFuture.remove(e);
 			eventsAndFuture.notifyAll();
 		}
 	}
@@ -61,12 +55,14 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public void sendBroadcast(Broadcast b) {
 		if (registeredByBroadcastType.get(b.getClass()) != null) {
-			synchronized (microservicesQueues) {
+			synchronized (registeredByBroadcastType.get(b.getClass())) {
 				for (MicroService m : registeredByBroadcastType.get(b.getClass())) {
-
-					microservicesQueues.get(m).add(b);
+					synchronized (microservicesQueues.get(m)) {
+						microservicesQueues.get(m).add(b);
+						microservicesQueues.get(m).notifyAll();
+					}
 				}
-				microservicesQueues.notifyAll();
+				registeredByBroadcastType.get(b.getClass()).notifyAll();
 			}
 		}
 	}
@@ -76,12 +72,12 @@ public class MessageBusImpl implements MessageBus {
 		// the blocking and concurrent queues takes care on the multiThreading, therefore theres no need in 'synchronized'
 		MicroService m;
 		if (registeredByEventType.get(e.getClass()) != null && !registeredByEventType.get(e.getClass()).isEmpty()) {
-			synchronized (registeredByEventType) {
+			synchronized (registeredByEventType.get(e.getClass())) {
 				m = registeredByEventType.get(e.getClass()).poll();
-				if (microservicesQueues.get(m) != null) {
-					synchronized (microservicesQueues) {
+				synchronized (microservicesQueues.get(m)) {
+					if (microservicesQueues.get(m) != null) {
 						microservicesQueues.get(m).add(e);
-						microservicesQueues.notifyAll();
+						microservicesQueues.get(m).notifyAll();
 					}
 					Future<T> f = new Future<>();
 					synchronized (eventsAndFuture) {
@@ -89,10 +85,12 @@ public class MessageBusImpl implements MessageBus {
 						eventsAndFuture.notifyAll();
 					}
 					registeredByEventType.get(e.getClass()).add(m);
+					microservicesQueues.get(m).notifyAll();
+					registeredByEventType.get(e.getClass()).notifyAll();
 					return f;
 				}
-				registeredByEventType.notifyAll();
 			}
+
 		}
 		return null;
 	}
@@ -101,6 +99,7 @@ public class MessageBusImpl implements MessageBus {
 	public void register(MicroService m) {
 		synchronized (microservicesQueues) {
 			microservicesQueues.putIfAbsent(m, new LinkedBlockingQueue<Message>());
+			microservicesQueues.notifyAll();
 		}
 	}
 
@@ -112,6 +111,7 @@ public class MessageBusImpl implements MessageBus {
 				if (entry.getValue().contains(m))
 					entry.getValue().remove(m);
 			}
+			registeredByEventType.notifyAll();
 		}
 
 		//remove m from the broadcast queue
@@ -121,12 +121,14 @@ public class MessageBusImpl implements MessageBus {
 					entry.getValue().remove(m);
 
 			}
+			registeredByBroadcastType.notifyAll();
 		}
 
 		//delete m's queue
 		synchronized (microservicesQueues) {
 			if (microservicesQueues.contains(m))
 				microservicesQueues.remove(m);
+			microservicesQueues.notifyAll();
 		}
 	}
 
@@ -137,6 +139,7 @@ public class MessageBusImpl implements MessageBus {
 			while (microservicesQueues.get(m).isEmpty())
 				microservicesQueues.get(m).wait();
 			message = microservicesQueues.get(m).poll();
+			microservicesQueues.get(m).notifyAll();
 		}
 		return message;
 	}

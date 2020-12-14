@@ -63,6 +63,7 @@ public abstract class MicroService implements Runnable {
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
         synchronized (callbacks) {
             callbacks.putIfAbsent(type, callback);
+            callbacks.notifyAll();
         }
         messageBus.subscribeEvent(type, this);
     }
@@ -88,8 +89,9 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        synchronized (callback) {
+        synchronized (callbacks) {
             callbacks.putIfAbsent(type, callback);
+            callbacks.notifyAll();
         }
     	messageBus.subscribeBroadcast(type, this);
     }
@@ -169,16 +171,18 @@ public abstract class MicroService implements Runnable {
         }
 
         while (!isTerminated) {
-            Message event;
+            Message message;
             try {
-                event = messageBus.awaitMessage(this);
-                if (callbacks.get(event.getClass()) != null)
-                    callbacks.get(event.getClass()).call(event);
+                message = messageBus.awaitMessage(this);
+                if (callbacks.get(message.getClass()) != null) {
+                    callbacks.get(message.getClass()).call(message);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-
+        System.out.println(this.name + " out of loop");
         messageBus.unregister(this);
+        System.out.println(this.name + " unregistered");
     }
 }
