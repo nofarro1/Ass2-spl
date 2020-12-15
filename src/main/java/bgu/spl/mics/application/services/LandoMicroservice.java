@@ -26,7 +26,6 @@ public class LandoMicroservice  extends MicroService {
         // subscribeBroadcast and implement the call function for terminateBroadcast
         subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setLandoTerminate(System.currentTimeMillis());
-            System.out.println("Lando terminated");
             this.terminate();
         });
 
@@ -39,7 +38,6 @@ public class LandoMicroservice  extends MicroService {
             catch (InterruptedException e) {}
             sendBroadcast(terminateBroadcast);
             complete(c, true);
-            System.out.println("Lando complete BombEvent");
         });
     }
 }

@@ -24,6 +24,10 @@ public class Diary {
         totalAttacks = new AtomicInteger(0);
     };
 
+    public void resetNumberAttacks() {
+        totalAttacks = new AtomicInteger(0); // TODO: only for tests DELETE!!!!!!!!!!!!!!!!!
+    }
+
     private static class SingleHolder {
         private static Diary instance = new Diary();
     }

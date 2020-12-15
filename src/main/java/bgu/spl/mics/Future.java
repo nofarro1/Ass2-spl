@@ -18,7 +18,10 @@ public class Future<T> {
 	 * This should be the the only public constructor in this class.
 	 */
 
-	public Future(){ isDone=false;}
+	public Future(){
+		isDone = false;
+		result = null;
+	}
 
 	/**
      * retrieves the result the Future object holds if it has been resolved.
@@ -28,20 +31,28 @@ public class Future<T> {
      * @return return the result of type T if it is available, if not wait until it is available.
      * 	       
      */
-	public synchronized T get() throws InterruptedException {
-		while(!isDone){
-			wait();
+	public T get() {
+		synchronized (this) {
+			while (!isDone) {
+				try {
+					this.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			return result;
 		}
-		return result;
 	}
 	
 	/**
      * Resolves the result of this Future object.
      */
-	public synchronized void resolve (T result) {
-		if (result != null) {
-			this.result = result;
-			isDone = true;
+	public void resolve (T result) {
+		synchronized (this) {
+			if (!isDone) {
+				this.result = result;
+				isDone = true;
+			}
 			notifyAll();
 		}
 	}
@@ -52,7 +63,7 @@ public class Future<T> {
 	public boolean isDone() {
 		return isDone;
 	}
-	
+
 	/**
      * retrieves the result the Future object holds if it has been resolved,
      * This method is non-blocking, it has a limited amount of time determined
@@ -67,11 +78,10 @@ public class Future<T> {
 	public T get(long timeout, TimeUnit unit) throws InterruptedException {
 		if(!isDone){
 			try {
-				Thread.sleep(unit.toMillis(timeout));
+				wait(unit.toMillis(timeout));
 			}
 			catch (InterruptedException e ){}
 		}
 		return result;
 	}
-
 }

@@ -33,45 +33,42 @@ public class C3POMicroservice extends MicroService {
     protected void initialize() {
         // subscribeEvent and implement the call function for AttackEvent
         subscribeEvent(AttackEvent.class, c -> {
-            System.out.println("C3PO start AttackEvent");
+            // acquire the Ewoks
             List<Integer> requiredEwoks = c.getSerials();
-                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                    Integer t = (Integer) i.next();
-                    Ewok curr = ewoks.getEwok(t.intValue());
-                    synchronized (curr) {
-                        while (!curr.isAvailable())
-                            curr.wait();
-                        curr.acquire();
-                        System.out.println("C3PO acquired ewok #"+ t.intValue());
+            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                Integer t = (Integer) i.next();
+                Ewok curr = ewoks.getEwok(t.intValue());
+                synchronized (curr) {
+                    while (!curr.isAvailable()) {
+                        System.out.println("*** HanSolo is waiting for ewok");
+                        curr.wait();
                     }
+                    curr.acquire();
                 }
-                try {
-                    Thread.sleep(c.getDuration());
-                } catch (InterruptedException e) { }
-                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                    Integer t = (Integer) i.next();
-                    Ewok curr = ewoks.getEwok(t.intValue());
-                    synchronized (curr) {
-                        curr.release();
-                        curr.notifyAll();
-                        System.out.println("C3PO released ewok #"+ t.intValue());
-                    }
             }
-            Diary.getInstance().setTotalAttacks();
+            Thread.sleep(c.getDuration());
+
+            // release the ewoks
+            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                Integer t = (Integer) i.next();
+                Ewok curr = ewoks.getEwok(t.intValue());
+                synchronized (curr) {
+                    curr.release();
+                    curr.notifyAll();
+                }
+            }
             complete(c, true);
-            System.out.println("C3PO complete AttackEvent");
-                });
+            Diary.getInstance().setTotalAttacks();
+        });
 
         // subscribe to the Broadcast that comes after c3po finish his attacks
         subscribeBroadcast(FinishBroadcast.class, c -> {
             Diary.getInstance().setC3POFinish(System.currentTimeMillis());
-            System.out.println("C3PO finish all his AttackEvent");
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
         subscribeBroadcast(TerminateBroadcast.class, c -> {
             Diary.getInstance().setC3POTerminate(System.currentTimeMillis());
-            System.out.println("C3PO terminated");
             this.terminate();
         });
 

@@ -27,30 +27,15 @@ public class FutureTest {
         String str = "someResult";
         future.resolve(str);
         assertTrue(future.isDone());
-        try {
-            assertTrue(str.equals(future.get()));
-        } catch (InterruptedException e) {
-            System.out.println("testResolve Failed in the get function");
-            e.printStackTrace();
-        }
+        assertTrue(str.equals(future.get()));
     }
 
     @Test
     public void getNoParamTest() {
         assertFalse(future.isDone());
         future.resolve("completed");
-        try {
-            assertTrue(future.get()=="completed");
-        } catch (InterruptedException e) {
-            System.out.println("getNoParamTest Failed in the get function");
-            e.printStackTrace();
-        }
-        try {
-            assertEquals ("completed",future.get());
-        } catch (InterruptedException e) {
-            System.out.println("getNoParamTest Failed in the get function");
-            e.printStackTrace();
-        }
+        assertTrue(future.get()=="completed");
+        assertEquals ("completed",future.get());
     }
 
     @Test

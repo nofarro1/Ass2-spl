@@ -37,45 +37,44 @@ public class HanSoloMicroservice extends MicroService {
     @Override
     protected void initialize() {
         this.subscribeEvent(AttackEvent.class, c -> {
-            System.out.println("HanSolo start AttackEvent");
+            // acquire the ewoks
             List<Integer> requiredEwoks = c.getSerials();
-                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                    Integer t = (Integer) i.next();
-                    Ewok curr = ewoks.getEwok(t.intValue());
-                    synchronized (curr) {
-                        while (!curr.isAvailable())
-                            curr.wait();
-                        curr.acquire();
-                        System.out.println("Han acquired ewok #"+ t.intValue());
+            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                Integer t = (Integer) i.next();
+                Ewok curr = ewoks.getEwok(t.intValue());
+                synchronized (curr) {
+                    while (!curr.isAvailable()) {
+                        System.out.println("*** HanSolo is waiting for ewok");
+                        curr.wait();
                     }
+                    curr.acquire();
                 }
-                try {
-                    Thread.sleep(c.getDuration());
-                } catch (InterruptedException e) {}
-                for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
-                    Integer t = (Integer) i.next();
-                    Ewok curr = ewoks.getEwok(t.intValue());
-                    synchronized (curr) {
-                        curr.release();
-                        curr.notifyAll();
-                        System.out.println("Han released ewok #"+ t.intValue());
-                    }
+            }
+
+            Thread.sleep(c.getDuration());
+
+            //release the ewoks
+            for (ListIterator i = requiredEwoks.listIterator(); i.hasNext(); ) {
+                Integer t = (Integer) i.next();
+                Ewok curr = ewoks.getEwok(t.intValue());
+                synchronized (curr) {
+                    curr.release();
+                    curr.notifyAll();
                 }
-            Diary.getInstance().setTotalAttacks();
+            }
             complete(c, true);
-            System.out.println("HanSolo complete AttackEvent");
-            });
+            Diary.getInstance().setTotalAttacks();
+        });
+
         // subscribe to the Broadcast that comes after han finish his attacks
         subscribeBroadcast(FinishBroadcast.class, c -> {
             Diary.getInstance().setHanSoloFinish(System.currentTimeMillis());
-            System.out.println("HanSolo finish all his AttackEvent");
         });
 
         // subscribeBroadcast and implement the call function for terminateBroadcast
             subscribeBroadcast(TerminateBroadcast.class, c -> {
                 Diary.getInstance().setHanSoloTerminate(System.currentTimeMillis());
-                System.out.println("HanSolo terminated");
-            this.terminate();
+                this.terminate();
         });
 
     }

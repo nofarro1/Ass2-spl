@@ -31,7 +31,6 @@ public class R2D2Microservice extends MicroService {
             }
             catch (InterruptedException e) {}
             complete(c,true);
-            System.out.println("R2D2 complete DeactivateEvents");
             Diary.getInstance().setR2D2Deactivate(System.currentTimeMillis());
         });
 
@@ -39,7 +38,6 @@ public class R2D2Microservice extends MicroService {
         TerminateBroadcast terminateBroadcast = new TerminateBroadcast();
         subscribeBroadcast(terminateBroadcast.getClass(), c -> {
             Diary.getInstance().setR2D2Terminate(System.currentTimeMillis());
-            System.out.println("R2D2 terminated");
             this.terminate();
         });
     }

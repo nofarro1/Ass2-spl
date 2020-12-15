@@ -27,66 +27,62 @@ public class MessageBusImpl implements MessageBus {
 	
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		synchronized (registeredByEventType){
-			registeredByEventType.putIfAbsent(type, new ConcurrentLinkedQueue<MicroService>());
-			registeredByEventType.get(type).add(m); // other microservices can't access the queue because the map in locked
-			registeredByEventType.notifyAll();
-		}
+		//synchronized (registeredByEventType) {
+			registeredByEventType.putIfAbsent(type, new ConcurrentLinkedQueue<>());
+			registeredByEventType.get(type).add(m);
+		//}
 	}
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		synchronized (registeredByBroadcastType){
-			registeredByBroadcastType.putIfAbsent(type, new ConcurrentLinkedQueue<MicroService>());
-			registeredByBroadcastType.get(type).add(m); // other microservices can't access the queue because the map in locked
-			registeredByBroadcastType.notifyAll();
-		}
+
+		//synchronized (registeredByBroadcastType) {
+			registeredByBroadcastType.putIfAbsent(type, new ConcurrentLinkedQueue<>());
+			registeredByBroadcastType.get(type).add(m);
+		//}
 	}
 
-
-	@Override @SuppressWarnings("unchecked")
+	@Override
 	public <T> void complete(Event<T> e, T result) {
-		synchronized (eventsAndFuture) {
-			eventsAndFuture.get(e).resolve(result);
-			eventsAndFuture.notifyAll();
-		}
+		eventsAndFuture.get(e).resolve(result);
 	}
 
 	@Override
 	public void sendBroadcast(Broadcast b) {
 		if (registeredByBroadcastType.get(b.getClass()) != null) {
-			synchronized (registeredByBroadcastType.get(b.getClass())) {
+			synchronized (microservicesQueues) {
 				for (MicroService m : registeredByBroadcastType.get(b.getClass())) {
 					synchronized (microservicesQueues.get(m)) {
+						System.out.println(m.getName() + "' queue is locked ");
 						microservicesQueues.get(m).add(b);
 						microservicesQueues.get(m).notifyAll();
 					}
+					System.out.println("-- " + m.getName() + "' queue is unlocked ");
 				}
-				registeredByBroadcastType.get(b.getClass()).notifyAll();
 			}
 		}
 	}
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		// the blocking and concurrent queues takes care on the multiThreading, therefore theres no need in 'synchronized'
+
 		MicroService m;
+		Future<T> f = new Future<>();
+
 		if (registeredByEventType.get(e.getClass()) != null && !registeredByEventType.get(e.getClass()).isEmpty()) {
+			eventsAndFuture.putIfAbsent(e,f);
 			synchronized (registeredByEventType.get(e.getClass())) {
-				m = registeredByEventType.get(e.getClass()).poll();
-				synchronized (microservicesQueues.get(m)) {
-					if (microservicesQueues.get(m) != null) {
+				m = registeredByEventType.get(e.getClass()).poll(); // pull m from queue so the next one will receive the next event
+				registeredByEventType.get(e.getClass()).add(m); // return m to the queue
+
+				if (microservicesQueues.get(m) != null) {
+					synchronized (microservicesQueues.get(m)) {
+						System.out.println(m.getName()+ "' queue is locked ");
 						microservicesQueues.get(m).add(e);
 						microservicesQueues.get(m).notifyAll();
 					}
-					Future<T> f = new Future<>();
-					synchronized (eventsAndFuture) {
-						eventsAndFuture.put(e, f);
-						eventsAndFuture.notifyAll();
-					}
-					registeredByEventType.get(e.getClass()).add(m);
-					microservicesQueues.get(m).notifyAll();
-					registeredByEventType.get(e.getClass()).notifyAll();
+					System.out.println("-- "+m.getName()+ "' queue is unlocked ");
+					System.out.println("-- "+e.getClass()+ "' queue is unlocked ");
 					return f;
 				}
 			}
@@ -97,51 +93,54 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void register(MicroService m) {
-		synchronized (microservicesQueues) {
-			microservicesQueues.putIfAbsent(m, new LinkedBlockingQueue<Message>());
-			microservicesQueues.notifyAll();
-		}
+		microservicesQueues.putIfAbsent(m, new LinkedBlockingQueue<>());
 	}
 
 	@Override
 	public void unregister(MicroService m) {
+
 		//remove m from the events queue
 		synchronized (registeredByEventType) {
+			System.out.println("registeredByEventType queue is locked ");
 			for (Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> entry : registeredByEventType.entrySet()) {
 				if (entry.getValue().contains(m))
 					entry.getValue().remove(m);
 			}
-			registeredByEventType.notifyAll();
 		}
+		System.out.println("-- registeredByEventType queue is unlocked ");
 
 		//remove m from the broadcast queue
 		synchronized (registeredByBroadcastType) {
+			System.out.println("registeredByBroadcastType queue is locked ");
 			for (Map.Entry<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> entry : registeredByBroadcastType.entrySet()) {
 				if (entry.getValue().contains(m))
 					entry.getValue().remove(m);
-
 			}
-			registeredByBroadcastType.notifyAll();
 		}
+		System.out.println("-- registeredByBroadcastType queue is unlocked ");
+
 
 		//delete m's queue
 		synchronized (microservicesQueues) {
-			if (microservicesQueues.contains(m))
-				microservicesQueues.remove(m);
-			microservicesQueues.notifyAll();
+			System.out.println("microservicesQueues queue is locked ");
+			microservicesQueues.remove(m);
 		}
+		System.out.println("-- microservicesQueues queue is unlocked ");
+
 	}
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
-		Message message;
+/*		Message message;
 		synchronized (microservicesQueues.get(m)) {
 			while (microservicesQueues.get(m).isEmpty())
 				microservicesQueues.get(m).wait();
 			message = microservicesQueues.get(m).poll();
-			microservicesQueues.get(m).notifyAll();
 		}
-		return message;
+
+		return message;*/
+		System.out.println("*** " +m.getName() + " entered awaitMessage");
+		return microservicesQueues.get(m).take();
 	}
 
 	public Object getQueue(String name) { return null; }

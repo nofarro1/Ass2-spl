@@ -66,7 +66,7 @@ public class Main {
 		Gson output = new GsonBuilder().setPrettyPrinting().create();
 		try{
 			//FileWriter file = new FileWriter(args[1]);
-			FileWriter file = new FileWriter("output.json");
+			FileWriter file = new FileWriter("Output.json");
 			output.toJson(diary, file);
 			file.flush();
 			file.close();
