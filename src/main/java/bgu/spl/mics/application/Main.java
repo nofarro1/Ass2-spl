@@ -73,7 +73,5 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//TODO: DELETE!!
-		System.out.println("finish");
 	}
 }

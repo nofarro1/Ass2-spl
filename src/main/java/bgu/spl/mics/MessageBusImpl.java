@@ -53,11 +53,9 @@ public class MessageBusImpl implements MessageBus {
 			synchronized (microservicesQueues) {
 				for (MicroService m : registeredByBroadcastType.get(b.getClass())) {
 					synchronized (microservicesQueues.get(m)) {
-						System.out.println(m.getName() + "' queue is locked ");
 						microservicesQueues.get(m).add(b);
 						microservicesQueues.get(m).notifyAll();
 					}
-					System.out.println("-- " + m.getName() + "' queue is unlocked ");
 				}
 			}
 		}
@@ -77,12 +75,9 @@ public class MessageBusImpl implements MessageBus {
 
 				if (microservicesQueues.get(m) != null) {
 					synchronized (microservicesQueues.get(m)) {
-						System.out.println(m.getName()+ "' queue is locked ");
 						microservicesQueues.get(m).add(e);
 						microservicesQueues.get(m).notifyAll();
 					}
-					System.out.println("-- "+m.getName()+ "' queue is unlocked ");
-					System.out.println("-- "+e.getClass()+ "' queue is unlocked ");
 					return f;
 				}
 			}
@@ -101,45 +96,29 @@ public class MessageBusImpl implements MessageBus {
 
 		//remove m from the events queue
 		synchronized (registeredByEventType) {
-			System.out.println("registeredByEventType queue is locked ");
 			for (Map.Entry<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> entry : registeredByEventType.entrySet()) {
 				if (entry.getValue().contains(m))
 					entry.getValue().remove(m);
 			}
 		}
-		System.out.println("-- registeredByEventType queue is unlocked ");
 
 		//remove m from the broadcast queue
 		synchronized (registeredByBroadcastType) {
-			System.out.println("registeredByBroadcastType queue is locked ");
 			for (Map.Entry<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> entry : registeredByBroadcastType.entrySet()) {
 				if (entry.getValue().contains(m))
 					entry.getValue().remove(m);
 			}
 		}
-		System.out.println("-- registeredByBroadcastType queue is unlocked ");
-
 
 		//delete m's queue
 		synchronized (microservicesQueues) {
-			System.out.println("microservicesQueues queue is locked ");
 			microservicesQueues.remove(m);
 		}
-		System.out.println("-- microservicesQueues queue is unlocked ");
 
 	}
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
-/*		Message message;
-		synchronized (microservicesQueues.get(m)) {
-			while (microservicesQueues.get(m).isEmpty())
-				microservicesQueues.get(m).wait();
-			message = microservicesQueues.get(m).poll();
-		}
-
-		return message;*/
-		System.out.println("*** " +m.getName() + " entered awaitMessage");
 		return microservicesQueues.get(m).take();
 	}
 

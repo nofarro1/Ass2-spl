@@ -44,7 +44,6 @@ public class HanSoloMicroservice extends MicroService {
                 Ewok curr = ewoks.getEwok(t.intValue());
                 synchronized (curr) {
                     while (!curr.isAvailable()) {
-                        System.out.println("*** HanSolo is waiting for ewok");
                         curr.wait();
                     }
                     curr.acquire();
